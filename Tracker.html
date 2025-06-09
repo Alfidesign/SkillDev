@@ -1,0 +1,482 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Skill Development Tracker</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+        .chart-container {
+            position: relative;
+            width: 100%;
+            height: 280px;
+        }
+        .loader {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #3498db;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body class="bg-gray-100 text-gray-800">
+
+    <div class="container mx-auto p-4 sm:p-6 lg:p-8">
+
+        <header class="text-center mb-10">
+            <h1 class="text-4xl font-bold text-gray-900">Skill Development Tracker</h1>
+            <p class="text-lg text-gray-600 mt-2">Catat, visualisasikan, dan akselerasi perjalanan belajar Anda.</p>
+            <button id="summarize-btn" class="mt-4 inline-flex items-center px-6 py-2 border border-transparent text-base font-medium rounded-md shadow-sm text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
+                ✨ Ringkas Kemajuan Mingguan
+            </button>
+        </header>
+
+        <!-- Dashboard Visualisasi -->
+        <section id="dashboard" class="mb-8">
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                <!-- Total Waktu Belajar -->
+                <div class="bg-white p-6 rounded-xl shadow-sm flex items-center justify-between">
+                    <div>
+                        <p class="text-sm font-medium text-gray-500">Total Waktu Belajar</p>
+                        <p id="total-hours" class="text-3xl font-bold text-blue-600">0 Jam</p>
+                    </div>
+                     <div class="bg-blue-100 text-blue-600 p-3 rounded-full">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                    </div>
+                </div>
+
+                <!-- Breakdown Waktu per Keahlian -->
+                <div class="bg-white p-6 rounded-xl shadow-sm">
+                    <h3 class="text-lg font-semibold mb-2 text-center">Alokasi Waktu per Keahlian</h3>
+                    <div class="chart-container">
+                        <canvas id="skillDonutChart"></canvas>
+                    </div>
+                </div>
+
+                <!-- Aktivitas 7 Hari Terakhir -->
+                <div class="bg-white p-6 rounded-xl shadow-sm">
+                    <h3 class="text-lg font-semibold mb-2 text-center">Aktivitas 7 Hari Terakhir</h3>
+                    <div class="chart-container">
+                        <canvas id="activityBarChart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Form Input & Log Aktivitas -->
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            <!-- Form Input -->
+            <aside id="input-section" class="lg:col-span-1">
+                <div class="bg-white p-6 rounded-xl shadow-sm sticky top-8">
+                    <h2 id="form-title" class="text-2xl font-bold mb-4">Tambah Catatan Baru</h2>
+                    <form id="progress-form" class="space-y-4">
+                        <input type="hidden" id="entry-id">
+                        
+                        <div>
+                            <label for="skill" class="block text-sm font-medium text-gray-700">Pilih Keahlian</label>
+                            <select id="skill" name="skill" required class="mt-1 block w-full py-2 px-3 border border-gray-300 bg-white rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm">
+                                <option>Gitar</option>
+                                <option>Bahasa Inggris</option>
+                                <option>Bahasa Arab</option>
+                                <option>Teaching Skill</option>
+                                <option>Desain Digital</option>
+                                <option>Menulis Ilmiah</option>
+                                <option>Money Management</option>
+                            </select>
+                        </div>
+
+                        <div>
+                            <label for="date" class="block text-sm font-medium text-gray-700">Tanggal</label>
+                            <input type="date" id="date" name="date" required class="mt-1 block w-full py-2 px-3 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm">
+                        </div>
+
+                        <div>
+                            <label for="duration" class="block text-sm font-medium text-gray-700">Durasi (menit)</label>
+                            <input type="number" id="duration" name="duration" required min="1" class="mt-1 block w-full py-2 px-3 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm">
+                        </div>
+
+                        <div>
+                            <label for="description" class="block text-sm font-medium text-gray-700">Deskripsi Aktivitas</label>
+                            <textarea id="description" name="description" rows="4" required class="mt-1 block w-full py-2 px-3 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm" placeholder="Contoh: Latihan kunci balok F dan Bm selama 30 menit."></textarea>
+                        </div>
+                        
+                        <div class="flex space-x-4">
+                             <button type="submit" class="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">Simpan Catatan</button>
+                             <button type="button" id="reset-btn" class="w-full flex justify-center py-2 px-4 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">Reset</button>
+                        </div>
+                    </form>
+                </div>
+            </aside>
+
+            <!-- Log Aktivitas -->
+            <main id="log-section" class="lg:col-span-2">
+                 <h2 class="text-2xl font-bold mb-4">Log Aktivitas Pengembangan Diri</h2>
+                 <div id="log-list" class="space-y-4">
+                     <!-- Catatan akan muncul di sini -->
+                 </div>
+            </main>
+        </div>
+
+    </div>
+    
+    <!-- Modal -->
+    <div id="gemini-modal" class="hidden fixed z-10 inset-0 overflow-y-auto">
+        <div class="flex items-center justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
+            <div class="fixed inset-0 transition-opacity" aria-hidden="true">
+                <div class="absolute inset-0 bg-gray-500 opacity-75"></div>
+            </div>
+            <span class="hidden sm:inline-block sm:align-middle sm:h-screen" aria-hidden="true">&#8203;</span>
+            <div class="inline-block align-bottom bg-white rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full">
+                <div class="bg-white px-4 pt-5 pb-4 sm:p-6 sm:pb-4">
+                    <div class="sm:flex sm:items-start">
+                        <div class="mx-auto flex-shrink-0 flex items-center justify-center h-12 w-12 rounded-full bg-indigo-100 sm:mx-0 sm:h-10 sm:w-10">
+                            <svg class="h-6 w-6 text-indigo-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z" /></svg>
+                        </div>
+                        <div class="mt-3 text-center sm:mt-0 sm:ml-4 sm:text-left w-full">
+                            <h3 class="text-lg leading-6 font-medium text-gray-900" id="modal-title">Memproses...</h3>
+                            <div class="mt-2" id="modal-content-area">
+                                <div class="flex justify-center items-center h-24">
+                                    <div class="loader"></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="bg-gray-50 px-4 py-3 sm:px-6 sm:flex sm:flex-row-reverse">
+                    <button type="button" id="close-modal-btn" class="mt-3 w-full inline-flex justify-center rounded-md border border-gray-300 shadow-sm px-4 py-2 bg-white text-base font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 sm:mt-0 sm:ml-3 sm:w-auto sm:text-sm">
+                        Tutup
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const form = document.getElementById('progress-form');
+            const logList = document.getElementById('log-list');
+            const formTitle = document.getElementById('form-title');
+            const entryIdInput = document.getElementById('entry-id');
+            const resetButton = document.getElementById('reset-btn');
+            const summarizeBtn = document.getElementById('summarize-btn');
+            const modal = document.getElementById('gemini-modal');
+            const modalTitle = document.getElementById('modal-title');
+            const modalContentArea = document.getElementById('modal-content-area');
+            const closeModalBtn = document.getElementById('close-modal-btn');
+            
+            let skillDonutChart, activityBarChart;
+
+            const formatDate = (date, formatString) => {
+                const d = new Date(date);
+                d.setMinutes(d.getMinutes() + d.getTimezoneOffset());
+                if (formatString === 'dd MMM') {
+                    const day = d.getDate();
+                    const month = d.toLocaleString('id-ID', { month: 'short' });
+                    return `${day} ${month}`;
+                }
+                if (formatString === 'yyyy-MM-dd') {
+                    return d.toISOString().split('T')[0];
+                }
+                return d.toLocaleDateString('id-ID');
+            };
+
+            // --- Gemini API Call ---
+            async function callGemini(prompt) {
+                showModal("Memproses Permintaan Anda...", "", true);
+                const apiKey = "";
+                const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`;
+                
+                let chatHistory = [{ role: "user", parts: [{ text: prompt }] }];
+                const payload = { contents: chatHistory };
+
+                try {
+                    const response = await fetch(apiUrl, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(payload)
+                    });
+                    if (!response.ok) {
+                        throw new Error(`HTTP error! status: ${response.status}`);
+                    }
+                    const result = await response.json();
+                    if (result.candidates && result.candidates.length > 0 && result.candidates[0].content.parts.length > 0) {
+                        const text = result.candidates[0].content.parts[0].text;
+                        return text;
+                    } else {
+                        throw new Error("Tidak ada konten yang diterima dari API.");
+                    }
+                } catch (error) {
+                    console.error("Error calling Gemini API:", error);
+                    return "Maaf, terjadi kesalahan saat menghubungi AI. Silakan coba lagi nanti.";
+                }
+            }
+            
+            // --- Modal Logic ---
+            const showModal = (title, content, isLoading = false) => {
+                modalTitle.textContent = title;
+                if (isLoading) {
+                    modalContentArea.innerHTML = `<div class="flex justify-center items-center h-24"><div class="loader"></div></div>`;
+                } else {
+                    modalContentArea.innerHTML = `<div class="text-sm text-gray-600 whitespace-pre-wrap">${content}</div>`;
+                }
+                modal.classList.remove('hidden');
+            };
+
+            const hideModal = () => {
+                modal.classList.add('hidden');
+            };
+            
+            closeModalBtn.addEventListener('click', hideModal);
+
+            // --- State & Data Management ---
+            let progressLog = [];
+
+            const saveData = () => {
+                localStorage.setItem('skillProgressLog', JSON.stringify(progressLog));
+            };
+
+            const loadData = () => {
+                const data = localStorage.getItem('skillProgressLog');
+                progressLog = data ? JSON.parse(data) : [];
+            };
+
+            const resetForm = () => {
+                form.reset();
+                entryIdInput.value = '';
+                formTitle.textContent = 'Tambah Catatan Baru';
+                 document.getElementById('date').value = formatDate(new Date(), 'yyyy-MM-dd');
+            };
+            
+            // --- Rendering ---
+            const renderLog = () => {
+                logList.innerHTML = '';
+
+                if (progressLog.length === 0) {
+                    logList.innerHTML = `<div class="text-center py-10 px-6 bg-white rounded-xl shadow-sm">
+                        <h3 class="text-lg font-medium text-gray-900">Belum ada data</h3>
+                        <p class="mt-1 text-sm text-gray-500">Tambahkan catatan pertama Anda menggunakan form di samping!</p>
+                    </div>`;
+                    return;
+                }
+
+                const sortedLog = [...progressLog].sort((a, b) => new Date(b.date) - new Date(a.date));
+
+                sortedLog.forEach(entry => {
+                    const logEntry = document.createElement('div');
+                    logEntry.className = 'bg-white p-5 rounded-xl shadow-sm';
+                    logEntry.innerHTML = `
+                        <div class="flex items-start space-x-4">
+                           <div class="flex-shrink-0 h-12 w-12 flex items-center justify-center rounded-full bg-blue-100 text-blue-600 font-bold text-sm">
+                                ${formatDate(entry.date, 'dd MMM')}
+                            </div>
+                            <div class="flex-grow">
+                                <div class="flex justify-between items-center">
+                                    <h4 class="font-bold text-lg">${entry.skill}</h4>
+                                    <span class="text-sm font-semibold text-gray-600">${entry.duration} min</span>
+                                </div>
+                                <p class="text-gray-700 mt-1">${entry.description}</p>
+                            </div>
+                            <div class="flex-shrink-0 flex flex-col sm:flex-row space-y-2 sm:space-y-0 sm:space-x-2">
+                                <button data-id="${entry.id}" class="edit-btn p-2 text-gray-500 hover:text-blue-600 hover:bg-gray-100 rounded-md">
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path d="M17.414 2.586a2 2 0 00-2.828 0L7 10.172V13h2.828l7.586-7.586a2 2 0 000-2.828z" /><path fill-rule="evenodd" d="M2 6a2 2 0 012-2h4a1 1 0 010 2H4v10h10v-4a1 1 0 112 0v4a2 2 0 01-2 2H4a2 2 0 01-2-2V6z" clip-rule="evenodd" /></svg>
+                                </button>
+                                <button data-id="${entry.id}" class="delete-btn p-2 text-gray-500 hover:text-red-600 hover:bg-gray-100 rounded-md">
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z" clip-rule="evenodd" /></svg>
+                                </button>
+                            </div>
+                        </div>
+                        <div class="mt-4 pt-4 border-t border-gray-200">
+                             <button data-id="${entry.id}" class="generate-plan-btn w-full flex justify-center items-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-indigo-500 hover:bg-indigo-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
+                                ✨ Buat Rencana Belajar
+                            </button>
+                        </div>
+                    `;
+                    logList.appendChild(logEntry);
+                });
+            };
+
+            const renderDashboard = () => {
+                // Total Hours
+                const totalMinutes = progressLog.reduce((sum, entry) => sum + Number(entry.duration), 0);
+                const totalHours = (totalMinutes / 60).toFixed(1);
+                document.getElementById('total-hours').textContent = `${totalHours} Jam`;
+
+                // Skill Donut Chart
+                const skillData = progressLog.reduce((acc, entry) => {
+                    acc[entry.skill] = (acc[entry.skill] || 0) + Number(entry.duration);
+                    return acc;
+                }, {});
+                
+                const donutCtx = document.getElementById('skillDonutChart').getContext('2d');
+                if (skillDonutChart) skillDonutChart.destroy();
+                skillDonutChart = new Chart(donutCtx, {
+                    type: 'doughnut',
+                    data: {
+                        labels: Object.keys(skillData),
+                        datasets: [{
+                            data: Object.values(skillData),
+                            backgroundColor: ['#3B82F6', '#10B981', '#F59E0B', '#8B5CF6', '#EF4444', '#6366F1', '#EC4899'],
+                            borderColor: '#FFFFFF',
+                            borderWidth: 2
+                        }]
+                    },
+                    options: { responsive: true, maintainAspectRatio: false, cutout: '70%', plugins: { legend: { display: false } } }
+                });
+
+                // Activity Bar Chart
+                const last7DaysData = {};
+                for (let i = 6; i >= 0; i--) {
+                    const d = new Date();
+                    d.setDate(d.getDate() - i);
+                    const formattedDate = formatDate(d, 'yyyy-MM-dd');
+                    last7DaysData[formattedDate] = 0;
+                }
+                progressLog.forEach(entry => {
+                    if (last7DaysData[entry.date] !== undefined) {
+                        last7DaysData[entry.date] += Number(entry.duration);
+                    }
+                });
+
+                const barCtx = document.getElementById('activityBarChart').getContext('2d');
+                if (activityBarChart) activityBarChart.destroy();
+                activityBarChart = new Chart(barCtx, {
+                    type: 'bar',
+                    data: {
+                        labels: Object.keys(last7DaysData).map(d => formatDate(d, 'dd MMM')),
+                        datasets: [{
+                            label: 'Durasi (menit)',
+                            data: Object.values(last7DaysData),
+                            backgroundColor: '#3B82F6',
+                            borderRadius: 4,
+                            barThickness: 15,
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        scales: { y: { beginAtZero: true, grid: { drawBorder: false } }, x: { grid: { display: false } } },
+                        plugins: { legend: { display: false } }
+                    }
+                });
+            };
+
+            const render = () => {
+                renderLog();
+                renderDashboard();
+            };
+            
+            // --- Event Handlers ---
+            form.addEventListener('submit', (e) => {
+                e.preventDefault();
+                const id = entryIdInput.value;
+                const newEntry = {
+                    skill: form.skill.value,
+                    date: form.date.value,
+                    duration: form.duration.value,
+                    description: form.description.value,
+                };
+
+                if (id) {
+                    const index = progressLog.findIndex(entry => entry.id === id);
+                    if (index > -1) {
+                        progressLog[index] = { ...progressLog[index], ...newEntry };
+                    }
+                } else {
+                    newEntry.id = Date.now().toString();
+                    progressLog.push(newEntry);
+                }
+                saveData();
+                resetForm();
+                render();
+            });
+
+            logList.addEventListener('click', (e) => {
+                const target = e.target;
+                const editBtn = target.closest('.edit-btn');
+                const deleteBtn = target.closest('.delete-btn');
+                const planBtn = target.closest('.generate-plan-btn');
+
+                if (editBtn) {
+                    const id = editBtn.dataset.id;
+                    const entry = progressLog.find(item => item.id === id);
+                    if (entry) {
+                        formTitle.textContent = 'Edit Catatan';
+                        entryIdInput.value = entry.id;
+                        form.skill.value = entry.skill;
+                        form.date.value = entry.date;
+                        form.duration.value = entry.duration;
+                        form.description.value = entry.description;
+                        form.scrollIntoView({ behavior: 'smooth' });
+                    }
+                }
+
+                if (deleteBtn) {
+                    const id = deleteBtn.dataset.id;
+                    if (confirm('Apakah Anda yakin ingin menghapus catatan ini?')) {
+                        progressLog = progressLog.filter(item => item.id !== id);
+                        saveData();
+                        render();
+                    }
+                }
+                
+                if (planBtn) {
+                    const id = planBtn.dataset.id;
+                    const entry = progressLog.find(item => item.id === id);
+                    if (entry) {
+                        const prompt = `Saya sedang belajar "${entry.skill}". Aktivitas terakhir saya adalah: "${entry.description}". Berdasarkan ini, berikan 3 ide atau langkah belajar konkret berikutnya dalam format daftar bernomor. Gunakan Bahasa Indonesia yang jelas dan memotivasi.`;
+                        callGemini(prompt).then(response => {
+                            showModal("✨ Rencana Belajar Berikutnya", response);
+                        });
+                    }
+                }
+            });
+
+            summarizeBtn.addEventListener('click', () => {
+                const today = new Date();
+                const sevenDaysAgo = new Date();
+                sevenDaysAgo.setDate(today.getDate() - 7);
+                
+                const recentLogs = progressLog.filter(entry => new Date(entry.date) >= sevenDaysAgo);
+                
+                if (recentLogs.length === 0) {
+                    showModal("Ringkasan Mingguan", "Anda belum mencatat aktivitas apa pun dalam 7 hari terakhir. Ayo mulai belajar!");
+                    return;
+                }
+
+                let logText = "Berikut adalah log belajar saya selama seminggu terakhir:\n";
+                recentLogs.forEach(entry => {
+                    logText += `- ${formatDate(entry.date, 'dd MMM')}: Belajar ${entry.skill} selama ${entry.duration} menit. Fokus pada: ${entry.description}\n`;
+                });
+
+                const prompt = `${logText}\n\nBerdasarkan data di atas, berikan ringkasan kemajuan saya yang singkat (satu paragraf) dan memotivasi. Sapa saya dengan hangat dan berikan semangat untuk minggu depan. Gunakan Bahasa Indonesia.`;
+
+                callGemini(prompt).then(response => {
+                    showModal("✨ Ringkasan Kemajuan Mingguan", response);
+                });
+            });
+
+            resetButton.addEventListener('click', resetForm);
+
+            // --- Initial Load ---
+            loadData();
+            document.getElementById('date').value = formatDate(new Date(), 'yyyy-MM-dd');
+            render();
+        });
+    </script>
+
+</body>
+</html>
